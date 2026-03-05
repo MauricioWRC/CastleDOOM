@@ -20,7 +20,11 @@ BLACK = (0, 0, 0)
 BLUE = (0, 0, 255)
 RED = (255, 0, 0)
 GRAY = (128, 128, 128)
+YELLOW = (255, 255, 0)
 
-# Relógio para controlar o FPS
+# Fonte para o contador
+pygame.font.init()
+FONTE_HUD = pygame.font.SysFont("Arial", 40, bold=True)
+
 clock = pygame.time.Clock()
 FPS = 60
