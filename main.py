@@ -43,7 +43,9 @@ def main():
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT: rodando = False
             if evento.type == pygame.KEYDOWN:
-                if evento.key == pygame.K_SPACE: player.jump(platformas)
+                if evento.key == pygame.K_ESCAPE: # Permite sair do jogo com a tecla ESC
+                    rodando = False
+                if evento.key == pygame.K_SPACE or evento.key == pygame.K_w: player.jump(platformas)
 
         # Tiro do Player (Segurando o botão)
         if pygame.mouse.get_pressed()[0]:

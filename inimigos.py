@@ -3,33 +3,41 @@ import random
 import math
 import utils as u
 
+
 class Inimigo(pygame.sprite.Sprite):
-    """Inimigo terrestre que causa dano ao encostar no player."""
+    """Inimigo terrestre com IA de rota para subir plataformas, mas com dificuldade moderada."""
     def __init__(self, tipo_spawn):
         super().__init__()
         self.image = pygame.Surface((40, 40))
         self.image.fill(u.RED)
         self.rect = self.image.get_rect()
-        
-        # Vida: morre com 2 tiros
+
+        # Vida: morre com 2 tiros (compatibilidade com main.py)
         self.hp = 2
-        
+
+        # Spawn no chao (main.py usa apenas esses tipos)
         if tipo_spawn == "chao_esquerda":
             self.rect.x = 50
             self.rect.bottom = 1000
         else:
             self.rect.x = u.VIRTUAL_WIDTH - 50
             self.rect.bottom = 1000
-            
+
         self.vel_x = 0
         self.vel_y = 0
         self.gravity = 0.8
-        self.speed = 3 
+
+        # Dificuldade mais proxima da versao antiga
+        self.speed = 3
         self.jump_power = -23
         self.jump_cooldown = 0
-        
+
+        # Perseguicao menos "perfeita"
         self.update_timer = 0
-        self.current_target_x = 0
+        self.current_target_x = self.rect.centerx
+
+        # IA de rota para subir plataformas
+        self.route_target = None
 
     def tomar_dano(self):
         self.hp -= 1
@@ -38,34 +46,128 @@ class Inimigo(pygame.sprite.Sprite):
             return True
         return False
 
-    def update(self, platforms, player=None):
-        if player:
-            self.update_timer -= 1
-            if self.update_timer <= 0:
-                self.update_timer = random.randint(30, 90)
-                self.current_target_x = player.rect.centerx + random.randint(-100, 100)
+    def get_current_platform_level(self):
+        b = self.rect.bottom
+        if b >= 995:
+            return "ground"
+        elif 735 <= b <= 780:
+            return "central"
+        elif 490 <= b <= 570:
+            return "mid"
+        elif b <= 220:
+            return "top"
+        return "air"
 
-            if self.current_target_x < self.rect.centerx - 10:
+    def get_player_platform_level(self, player):
+        b = player.rect.bottom
+        if b >= 995:
+            return "ground"
+        elif 735 <= b <= 780:
+            return "central"
+        elif 490 <= b <= 570:
+            return "mid"
+        elif b <= 220:
+            return "top"
+        return "air"
+
+    def jump(self, platforms):
+        self.rect.y += 2
+        hits = pygame.sprite.spritecollide(self, platforms, False)
+        self.rect.y -= 2
+        if hits:
+            self.vel_y = self.jump_power
+            self.jump_cooldown = 20
+
+    def update(self, platforms, player=None):
+        # Verifica se esta apoiado em plataforma/chao
+        self.rect.y += 2
+        hits = pygame.sprite.spritecollide(self, platforms, False)
+        self.rect.y -= 2
+        no_chao = len(hits) > 0
+
+        if player:
+            enemy_level = self.get_current_platform_level()
+            player_level = self.get_player_platform_level(player)
+
+            CENTRAL_X = 960
+            CENTRAL_JUMP_X = 960
+            MID_LEFT_JUMP_X = 880
+            MID_RIGHT_JUMP_X = 1040
+
+            target_x = self.rect.centerx
+
+            # Define/atualiza alvo de rota
+            if self.route_target is None:
+                if enemy_level == "ground" and player_level in ("central", "mid"):
+                    self.route_target = "central"
+                elif enemy_level == "central" and player_level == "mid":
+                    if player.rect.centerx < CENTRAL_X:
+                        self.route_target = "mid_left"
+                    else:
+                        self.route_target = "mid_right"
+
+            # Executa rota para subir plataforma
+            if self.route_target == "central":
+                target_x = CENTRAL_X
+                if enemy_level == "central":
+                    self.route_target = None
+                elif no_chao and self.jump_cooldown == 0 and abs(self.rect.centerx - CENTRAL_JUMP_X) <= 28:
+                    self.jump(platforms)
+
+            elif self.route_target == "mid_left":
+                target_x = MID_LEFT_JUMP_X
+                if enemy_level == "mid":
+                    self.route_target = None
+                elif no_chao and self.jump_cooldown == 0 and abs(self.rect.centerx - MID_LEFT_JUMP_X) <= 28:
+                    self.jump(platforms)
+
+            elif self.route_target == "mid_right":
+                target_x = MID_RIGHT_JUMP_X
+                if enemy_level == "mid":
+                    self.route_target = None
+                elif no_chao and self.jump_cooldown == 0 and abs(self.rect.centerx - MID_RIGHT_JUMP_X) <= 28:
+                    self.jump(platforms)
+
+            else:
+                # Perseguicao no mesmo nivel com atraso e imprecisao (menos dificil)
+                if enemy_level == player_level and enemy_level != "air":
+                    self.update_timer -= 1
+                    if self.update_timer <= 0:
+                        self.update_timer = random.randint(25, 55)
+                        self.current_target_x = player.rect.centerx + random.randint(-80, 80)
+                    target_x = self.current_target_x
+                else:
+                    target_x = player.rect.centerx
+
+            if target_x < self.rect.centerx - 10:
                 self.vel_x = -self.speed
-            elif self.current_target_x > self.rect.centerx + 10:
+            elif target_x > self.rect.centerx + 10:
                 self.vel_x = self.speed
             else:
                 self.vel_x = 0
 
+        # Fisica
         self.rect.x += self.vel_x
         self.vel_y += self.gravity
         self.rect.y += self.vel_y
-        
+
+        if self.jump_cooldown > 0:
+            self.jump_cooldown -= 1
+
         if self.vel_y > 0:
             hits = pygame.sprite.spritecollide(self, platforms, False)
             for hit in hits:
                 if self.rect.bottom <= hit.rect.top + self.vel_y:
                     self.rect.bottom = hit.rect.top
                     self.vel_y = 0
+                    self.jump_cooldown = 0
                     break
-                
-        if self.rect.left <= 0: self.rect.left = 0
-        if self.rect.right >= u.VIRTUAL_WIDTH: self.rect.right = u.VIRTUAL_WIDTH
+
+        if self.rect.left <= 0:
+            self.rect.left = 0
+        if self.rect.right >= u.VIRTUAL_WIDTH:
+            self.rect.right = u.VIRTUAL_WIDTH
+
 
 class InimigoEstatico(pygame.sprite.Sprite):
     """Inimigo das plataformas superiores que atira no player."""
@@ -76,18 +178,18 @@ class InimigoEstatico(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.hp = 2
         self.posicao_original = posicao
-        
-        # Lógica de tiro
+
+        # Logica de tiro
         self.ultimo_tiro = pygame.time.get_ticks()
-        self.cooldown_tiro = 3000 # 3 segundos
-        
+        self.cooldown_tiro = 3000  # 3 segundos
+
         if posicao == "topo_esquerda":
             self.rect.centerx = 125
             self.rect.bottom = 180
         else:
             self.rect.centerx = 1760
             self.rect.bottom = 160
-            
+
         self.vel_y = 0
         self.gravity = 0.8
 
@@ -97,7 +199,7 @@ class InimigoEstatico(pygame.sprite.Sprite):
             self.kill()
             return True
         return False
-        
+
     def update(self, platforms, player=None):
         self.vel_y += self.gravity
         self.rect.y += self.vel_y
@@ -114,6 +216,7 @@ class InimigoEstatico(pygame.sprite.Sprite):
                 return "atirar"
         return None
 
+
 class InimigoVoador(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
@@ -121,7 +224,7 @@ class InimigoVoador(pygame.sprite.Sprite):
         self.image.fill(u.GRAY)
         self.rect = self.image.get_rect()
         self.hp = 2
-        
+
         self.base_x = random.randint(300, 1600)
         self.base_y = random.randint(100, 400)
         self.t = random.uniform(0, 6.28)
