@@ -38,6 +38,8 @@ def main():
     ultimo_spawn_chao = pygame.time.get_ticks()
     
     while rodando:
+        u.screen.blit(u.BACKGROUND_IMAGE, (0, 0))
+
         agora = pygame.time.get_ticks()
         
         for evento in pygame.event.get():
@@ -104,7 +106,7 @@ def main():
             if v.tomar_dano(): abates += 1
 
         # Desenho
-        u.screen.fill(u.WHITE)
+        #u.screen.fill(u.WHITE)
         sprites.draw(u.screen)
         
         # HUD: Abates e Vida

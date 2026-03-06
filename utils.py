@@ -14,6 +14,10 @@ MONITOR_HEIGHT = info.current_h
 screen = pygame.display.set_mode((VIRTUAL_WIDTH, VIRTUAL_HEIGHT), pygame.FULLSCREEN | pygame.SCALED)
 pygame.display.set_caption("CastleDoom")
 
+# Adição da imagem de fundo
+BACKGROUND_IMAGE = pygame.image.load("./assets/Background.png").convert()
+BACKGROUND_IMAGE = pygame.transform.scale(BACKGROUND_IMAGE, (VIRTUAL_WIDTH, VIRTUAL_HEIGHT))
+
 # Cores
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
