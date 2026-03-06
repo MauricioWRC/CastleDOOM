@@ -6,7 +6,7 @@ import utils as u
 class Inimigo(pygame.sprite.Sprite):
     def __init__(self, tipo_spawn):
         super().__init__()
-        self.image = u.carregar_imagem("img/inimigo_chao.png", (40, 40), u.RED)
+        self.image = u.carregar_imagem("img/inimigo_chao.png", (100, 100), u.RED)
         self.rect = self.image.get_rect()
         self.hp = 2
         if tipo_spawn == "chao_esquerda":
@@ -139,7 +139,7 @@ class Inimigo(pygame.sprite.Sprite):
 class InimigoEstatico(pygame.sprite.Sprite):
     def __init__(self, posicao):
         super().__init__()
-        self.image = u.carregar_imagem("img/inimigo_estatico.png", (40, 40), u.RED)
+        self.image = u.carregar_imagem("img/inimigo_estatico.png", (100, 100), u.RED)
         self.rect = self.image.get_rect()
         self.hp = 2
         self.posicao_original = posicao

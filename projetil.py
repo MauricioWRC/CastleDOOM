@@ -2,16 +2,43 @@ import pygame
 import math
 import utils as u
 import random
+import os
+
+# Função auxiliar para carregar imagens com segurança
+def carregar_imagem_projetil(nome_arquivo):
+    # Tenta carregar a imagem da pasta 'assets' ou da pasta raiz
+    caminho_assets = os.path.join('assets', nome_arquivo)
+    
+    if os.path.exists(caminho_assets):
+        # Carrega e converte para performance mantendo transparência
+        return pygame.image.load(caminho_assets).convert_alpha()
+    elif os.path.exists(nome_arquivo):
+        return pygame.image.load(nome_arquivo).convert_alpha()
+    else:
+        # Se a imagem não for encontrada, cria um retângulo colorido de fallback
+        # para o jogo não quebrar, mas avisa no console.
+        print(f"AVISO: Imagem {nome_arquivo} não encontrada. Usando fallback.")
+        fallback = pygame.Surface((40, 40))
+        fallback.fill((255, 0, 255)) # Magenta choque para destacar o erro
+        return fallback
 
 class Projetil(pygame.sprite.Sprite):
     def __init__(self, x, y, target_x, target_y):
         super().__init__()
-        self.image = pygame.Surface((25, 25), pygame.SRCALPHA)
-        pygame.draw.circle(self.image, u.YELLOW, (12, 12), 12)
+        
+        # --- NOVO: Carregando a Splash Art ---
+        # Carrega a imagem especificada
+        self.image = carregar_imagem_projetil('img/ProjetilPlayer.png')
+        self.image = pygame.transform.scale(self.image, (80, 80))
+        
+        # Opcional: Se a imagem for muito grande/pequena, você pode redimensionar aqui
+        # self.image = pygame.transform.scale(self.image, (25, 25))
+        
         self.rect = self.image.get_rect()
         self.rect.center = (x, y)
         self.speed = 22 
         
+        # Lógica de direção permanece a mesma
         dx = target_x - x
         dy = target_y - y
         angle = math.atan2(dy, dx)
@@ -28,13 +55,16 @@ class Projetil(pygame.sprite.Sprite):
 class ProjetilInimigo(pygame.sprite.Sprite):
     def __init__(self, x, y, target_x, target_y):
         super().__init__()
-        self.image = pygame.Surface((20, 20), pygame.SRCALPHA)
-        pygame.draw.circle(self.image, (255, 100, 0), (10, 10), 10) # Laranja/Vermelho
+        
+        # --- NOVO: Carregando a Splash Art ---
+        self.image = carregar_imagem_projetil('img/ProjetilInimigo.png')
+        self.image = pygame.transform.scale(self.image, (80, 80))
+        
         self.rect = self.image.get_rect()
         self.rect.center = (x, y)
-        self.speed = 10 # Mais lento que o do player
+        self.speed = 10
         
-        # Erro de mira: adiciona um desvio aleatório entre -100 e 100 pixels
+        # Erro de mira
         desvio_x = random.randint(-100, 100)
         desvio_y = random.randint(-100, 100)
         
