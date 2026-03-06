@@ -51,4 +51,4 @@ def carregar_imagem(caminho, tamanho, cor_padrao):
         return surf
 
 # Carrega o fundo (se não achar, fica branco)
-IMG_FUNDO = carregar_imagem("img/fundo.png", (VIRTUAL_WIDTH, VIRTUAL_HEIGHT), WHITE)
+IMG_FUNDO = carregar_imagem("assets/Background.png", (VIRTUAL_WIDTH, VIRTUAL_HEIGHT), WHITE)

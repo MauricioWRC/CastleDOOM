@@ -42,6 +42,8 @@ class Projetil(pygame.sprite.Sprite):
         dx = target_x - x
         dy = target_y - y
         angle = math.atan2(dy, dx)
+        angle_deg = -math.degrees(angle)
+        self.image = pygame.transform.rotate(self.image, angle_deg)
         self.vel_x = math.cos(angle) * self.speed
         self.vel_y = math.sin(angle) * self.speed
         
@@ -71,6 +73,8 @@ class ProjetilInimigo(pygame.sprite.Sprite):
         dx = (target_x + desvio_x) - x
         dy = (target_y + desvio_y) - y
         angle = math.atan2(dy, dx)
+        angle_deg = -math.degrees(angle)
+        self.image = pygame.transform.rotate(self.image, angle_deg)
         self.vel_x = math.cos(angle) * self.speed
         self.vel_y = math.sin(angle) * self.speed
         

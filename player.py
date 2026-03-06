@@ -1,7 +1,7 @@
 import pygame
 import math
 import utils as u
-from projetil import Projetil
+from projetil import Projetil,  carregar_imagem_projetil
 
 class AreaMelee(pygame.sprite.Sprite):
     """Área de dano contínua que segue o rato."""
@@ -14,8 +14,10 @@ class AreaMelee(pygame.sprite.Sprite):
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        self.image = pygame.Surface((40, 60))
-        self.image.fill(u.BLUE)
+        self.image = carregar_imagem_projetil('img/PlayerParado.png')
+        self.image = pygame.transform.scale(self.image, (80, 80))
+        #self.image = pygame.Surface((40, 60))
+        #self.image.fill(u.BLUE)
         self.rect = self.image.get_rect()
         self.rect.centerx = 960
         self.rect.bottom = 1000
