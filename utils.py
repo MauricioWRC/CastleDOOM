@@ -7,6 +7,7 @@ VIRTUAL_HEIGHT = 1080
 
 # Inicialização do Pygame
 pygame.init()
+pygame.mixer.init()
 info = pygame.display.Info()
 MONITOR_WIDTH = info.current_w
 MONITOR_HEIGHT = info.current_h
@@ -14,7 +15,12 @@ MONITOR_HEIGHT = info.current_h
 # Configuração Fullscreen
 screen = pygame.display.set_mode((VIRTUAL_WIDTH, VIRTUAL_HEIGHT), pygame.FULLSCREEN | pygame.SCALED)
 pygame.display.set_caption("CastleDoom")
+pygame.display.set_caption("CastleDoom")
 
+# --- Música de fundo ---
+pygame.mixer.music.load("assets/musica.mp3")
+pygame.mixer.music.set_volume(0.1)
+pygame.mixer.music.play(-1)  # loop infinito
 # Cores
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
