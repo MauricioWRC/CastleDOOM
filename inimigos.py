@@ -3,71 +3,50 @@ import random
 import math
 import utils as u
 
-
 class Inimigo(pygame.sprite.Sprite):
-    """Inimigo terrestre com IA de rota para subir plataformas, mas com dificuldade moderada."""
     def __init__(self, tipo_spawn):
         super().__init__()
-        self.image = pygame.Surface((40, 40))
-        self.image.fill(u.RED)
+        self.image = u.carregar_imagem("img/inimigo_chao.png", (40, 40), u.RED)
         self.rect = self.image.get_rect()
-
-        # Vida: morre com 2 tiros (compatibilidade com main.py)
         self.hp = 2
-
-        # Spawn no chao (main.py usa apenas esses tipos)
         if tipo_spawn == "chao_esquerda":
             self.rect.x = 50
             self.rect.bottom = 1000
         else:
             self.rect.x = u.VIRTUAL_WIDTH - 50
             self.rect.bottom = 1000
-
         self.vel_x = 0
         self.vel_y = 0
         self.gravity = 0.8
-
-        # Dificuldade mais proxima da versao antiga
         self.speed = 3
         self.jump_power = -23
         self.jump_cooldown = 0
-
-        # Perseguicao menos "perfeita"
         self.update_timer = 0
         self.current_target_x = self.rect.centerx
-
-        # IA de rota para subir plataformas
         self.route_target = None
 
-    def tomar_dano(self):
-        self.hp -= 1
+    # --- NOVO: Agora aceita a "quantidade" de dano ---
+    def tomar_dano(self, quantidade=1):
+        self.hp -= quantidade
         if self.hp <= 0:
             self.kill()
-            return True
+            return True # Retorna True se morreu
         return False
 
     def get_current_platform_level(self):
         b = self.rect.bottom
-        if b >= 995:
-            return "ground"
-        elif 735 <= b <= 780:
-            return "central"
-        elif 490 <= b <= 570:
-            return "mid"
-        elif b <= 220:
-            return "top"
+        if b >= 995: return "ground"
+        elif 735 <= b <= 780: return "central"
+        elif 490 <= b <= 570: return "mid"
+        elif b <= 220: return "top"
         return "air"
 
     def get_player_platform_level(self, player):
         b = player.rect.bottom
-        if b >= 995:
-            return "ground"
-        elif 735 <= b <= 780:
-            return "central"
-        elif 490 <= b <= 570:
-            return "mid"
-        elif b <= 220:
-            return "top"
+        if b >= 995: return "ground"
+        elif 735 <= b <= 780: return "central"
+        elif 490 <= b <= 570: return "mid"
+        elif b <= 220: return "top"
         return "air"
 
     def jump(self, platforms):
@@ -79,7 +58,6 @@ class Inimigo(pygame.sprite.Sprite):
             self.jump_cooldown = 20
 
     def update(self, platforms, player=None):
-        # Verifica se esta apoiado em plataforma/chao
         self.rect.y += 2
         hits = pygame.sprite.spritecollide(self, platforms, False)
         self.rect.y -= 2
@@ -96,7 +74,6 @@ class Inimigo(pygame.sprite.Sprite):
 
             target_x = self.rect.centerx
 
-            # Define/atualiza alvo de rota
             if self.route_target is None:
                 if enemy_level == "ground" and player_level in ("central", "mid"):
                     self.route_target = "central"
@@ -106,7 +83,6 @@ class Inimigo(pygame.sprite.Sprite):
                     else:
                         self.route_target = "mid_right"
 
-            # Executa rota para subir plataforma
             if self.route_target == "central":
                 target_x = CENTRAL_X
                 if enemy_level == "central":
@@ -129,7 +105,6 @@ class Inimigo(pygame.sprite.Sprite):
                     self.jump(platforms)
 
             else:
-                # Perseguicao no mesmo nivel com atraso e imprecisao (menos dificil)
                 if enemy_level == player_level and enemy_level != "air":
                     self.update_timer -= 1
                     if self.update_timer <= 0:
@@ -139,20 +114,15 @@ class Inimigo(pygame.sprite.Sprite):
                 else:
                     target_x = player.rect.centerx
 
-            if target_x < self.rect.centerx - 10:
-                self.vel_x = -self.speed
-            elif target_x > self.rect.centerx + 10:
-                self.vel_x = self.speed
-            else:
-                self.vel_x = 0
+            if target_x < self.rect.centerx - 10: self.vel_x = -self.speed
+            elif target_x > self.rect.centerx + 10: self.vel_x = self.speed
+            else: self.vel_x = 0
 
-        # Fisica
         self.rect.x += self.vel_x
         self.vel_y += self.gravity
         self.rect.y += self.vel_y
 
-        if self.jump_cooldown > 0:
-            self.jump_cooldown -= 1
+        if self.jump_cooldown > 0: self.jump_cooldown -= 1
 
         if self.vel_y > 0:
             hits = pygame.sprite.spritecollide(self, platforms, False)
@@ -163,38 +133,30 @@ class Inimigo(pygame.sprite.Sprite):
                     self.jump_cooldown = 0
                     break
 
-        if self.rect.left <= 0:
-            self.rect.left = 0
-        if self.rect.right >= u.VIRTUAL_WIDTH:
-            self.rect.right = u.VIRTUAL_WIDTH
-
+        if self.rect.left <= 0: self.rect.left = 0
+        if self.rect.right >= u.VIRTUAL_WIDTH: self.rect.right = u.VIRTUAL_WIDTH
 
 class InimigoEstatico(pygame.sprite.Sprite):
-    """Inimigo das plataformas superiores que atira no player."""
     def __init__(self, posicao):
         super().__init__()
-        self.image = pygame.Surface((40, 40))
-        self.image.fill(u.RED)
+        self.image = u.carregar_imagem("img/inimigo_estatico.png", (40, 40), u.RED)
         self.rect = self.image.get_rect()
         self.hp = 2
         self.posicao_original = posicao
-
-        # Logica de tiro
         self.ultimo_tiro = pygame.time.get_ticks()
-        self.cooldown_tiro = 3000  # 3 segundos
-
+        self.cooldown_tiro = 3000
         if posicao == "topo_esquerda":
             self.rect.centerx = 125
             self.rect.bottom = 180
         else:
             self.rect.centerx = 1760
             self.rect.bottom = 160
-
         self.vel_y = 0
         self.gravity = 0.8
 
-    def tomar_dano(self):
-        self.hp -= 1
+    # --- NOVO: Agora aceita a "quantidade" de dano ---
+    def tomar_dano(self, quantidade=1):
+        self.hp -= quantidade
         if self.hp <= 0:
             self.kill()
             return True
@@ -216,15 +178,12 @@ class InimigoEstatico(pygame.sprite.Sprite):
                 return "atirar"
         return None
 
-
 class InimigoVoador(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        self.image = pygame.Surface((34, 34), pygame.SRCALPHA)
-        self.image.fill(u.GRAY)
+        self.image = u.carregar_imagem("img/inimigo_voador.png", (34, 34), u.GRAY)
         self.rect = self.image.get_rect()
         self.hp = 2
-
         self.base_x = random.randint(300, 1600)
         self.base_y = random.randint(100, 400)
         self.t = random.uniform(0, 6.28)
@@ -232,8 +191,9 @@ class InimigoVoador(pygame.sprite.Sprite):
         self.ay = random.randint(30, 50)
         self.w = random.uniform(0.03, 0.05)
 
-    def tomar_dano(self):
-        self.hp -= 1
+    # --- NOVO: Agora aceita a "quantidade" de dano ---
+    def tomar_dano(self, quantidade=1):
+        self.hp -= quantidade
         if self.hp <= 0:
             self.kill()
             return True
@@ -245,3 +205,4 @@ class InimigoVoador(pygame.sprite.Sprite):
         y = self.base_y + self.ay * math.sin(self.t) * math.cos(self.t)
         self.rect.centerx = int(x)
         self.rect.centery = int(y)
+

@@ -5,7 +5,7 @@ import utils as u
 from plataforma import Plataforma
 from player import Player
 from inimigos import Inimigo, InimigoVoador, InimigoEstatico
-from projetil import ProjetilInimigo # Certifique-se de que esta classe existe no seu projetil.py
+from projetil import ProjetilInimigo
 
 # Grupos
 sprites = pygame.sprite.Group()
@@ -36,6 +36,7 @@ def main():
     global abates
     rodando = True
     ultimo_spawn_chao = pygame.time.get_ticks()
+    ultimo_spawn_voador = pygame.time.get_ticks() 
     
     while rodando:
         agora = pygame.time.get_ticks()
@@ -43,52 +44,67 @@ def main():
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT: rodando = False
             if evento.type == pygame.KEYDOWN:
-                if evento.key == pygame.K_ESCAPE: # Permite sair do jogo com a tecla ESC
+                if evento.key == pygame.K_ESCAPE: 
                     rodando = False
-                if evento.key == pygame.K_SPACE or evento.key == pygame.K_w: player.jump(platformas)
+                if evento.key == pygame.K_SPACE or evento.key == pygame.K_w: 
+                    player.jump(platformas)
 
-        # Tiro do Player (Segurando o botão)
-        if pygame.mouse.get_pressed()[0]:
-            mx, my = pygame.mouse.get_pos()
+        # Controles do Rato (Mouse)
+        botoes_rato = pygame.mouse.get_pressed()
+        mx, my = pygame.mouse.get_pos() # Pegamos a posição do rato uma vez aqui
+        
+        # Botão Esquerdo [0] - Atirar
+        if botoes_rato[0]:
             player.atirar(mx, my, sprites, projeteis_player)
+            
+        # Botão Direito [2] - Ataque Corpo a Corpo Contínuo!
+        if botoes_rato[2]:
+            novos_abates = player.atacar_melee_continuo(mx, my, sprites, inimigos, voadores)
+            abates += novos_abates
+        else:
+            # Se não estiver a segurar o botão, a aura desaparece
+            player.parar_melee()
                     
-        # Lógica de Respawn (10 segundos para os de cima)
+        # Lógica de Respawn (Topo)
         for item in fila_respawn_topo[:]:
             if agora >= item[0]:
                 novo = InimigoEstatico(item[1])
                 sprites.add(novo); inimigos.add(novo)
                 fila_respawn_topo.remove(item)
 
-        # Spawn inimigos do chão
-        if agora - ultimo_spawn_chao > 4000:
+        # SPAWN: Inimigos do chão 
+        if agora - ultimo_spawn_chao > 2000:
             e = Inimigo(random.choice(["chao_esquerda", "chao_direita"]))
             sprites.add(e); inimigos.add(e)
             ultimo_spawn_chao = agora
+            
+        # SPAWN: Inimigos Voadores 
+        if agora - ultimo_spawn_voador > 4500:
+            v = InimigoVoador()
+            sprites.add(v); voadores.add(v)
+            ultimo_spawn_voador = agora
 
-        # Atualizações
+        # --- Atualizações ---
         player.update(platformas)
-        projeteis_player.update()
-        projeteis_inimigos.update()
         
         for inimigo in inimigos:
-            # Captura o sinal de tiro dos inimigos estáticos
             acao = inimigo.update(platformas, player)
             if acao == "atirar":
                 tiro_i = ProjetilInimigo(inimigo.rect.centerx, inimigo.rect.centery, player.rect.centerx, player.rect.centery)
                 sprites.add(tiro_i); projeteis_inimigos.add(tiro_i)
         
         voadores.update()
+        projeteis_player.update()
+        projeteis_inimigos.update()
 
         # --- Colisões ---
-        
         # 1. Player toma dano por projéteis
         if pygame.sprite.spritecollide(player, projeteis_inimigos, True):
             player.tomar_dano(1)
 
-        # 2. Player toma dano por contato (Inimigo de baixo não morre)
+        # 2. Player toma dano por contato
         hits_contato = pygame.sprite.spritecollide(player, inimigos, False)
-        if hits_contato:
-            player.tomar_dano(1)
+        if hits_contato: player.tomar_dano(1)
 
         # 3. Inimigos tomam dano de projéteis do Player
         acertos = pygame.sprite.groupcollide(inimigos, projeteis_player, False, True)
@@ -98,13 +114,13 @@ def main():
                 if isinstance(inimigo_atingido, InimigoEstatico):
                     fila_respawn_topo.append([agora + 10000, inimigo_atingido.posicao_original])
 
-        # 4. Voadores tomam dano
+        # 4. Voadores tomam dano de projéteis
         acertos_v = pygame.sprite.groupcollide(voadores, projeteis_player, False, True)
         for v in acertos_v:
             if v.tomar_dano(): abates += 1
 
         # Desenho
-        u.screen.fill(u.WHITE)
+        u.screen.blit(u.IMG_FUNDO, (0, 0)) 
         sprites.draw(u.screen)
         
         # HUD: Abates e Vida

@@ -1,6 +1,15 @@
 import pygame
+import math
 import utils as u
 from projetil import Projetil
+
+class AreaMelee(pygame.sprite.Sprite):
+    """Área de dano contínua que segue o rato."""
+    def __init__(self):
+        super().__init__()
+        self.image = pygame.Surface((140, 140), pygame.SRCALPHA)
+        pygame.draw.circle(self.image, (200, 200, 200, 150), (70, 70), 70)
+        self.rect = self.image.get_rect()
 
 class Player(pygame.sprite.Sprite):
     def __init__(self):
@@ -21,7 +30,14 @@ class Player(pygame.sprite.Sprite):
         self.ultimo_tiro = 0
         self.cooldown_tiro = 500
         self.ultimo_dano_recebido = 0
-        self.periodo_invencivel = 1000 # 1 segundo de "piscar" após dano
+        self.periodo_invencivel = 1000 
+        
+        # --- Atributos do Ataque Corpo a Corpo ---
+        self.area_melee = AreaMelee()
+        self.ultimo_dano_melee = 0
+        self.cooldown_dano_melee = 500 
+        # AQUI DEFINE-SE O DANO! (Antes tirava 1, agora tira 2 de cada vez)
+        self.dano_melee = 2 
 
     def tomar_dano(self, quantidade):
         agora = pygame.time.get_ticks()
@@ -73,3 +89,35 @@ class Player(pygame.sprite.Sprite):
             tiro = Projetil(self.rect.centerx, self.rect.centery, target_x, target_y)
             grupo_sprites.add(tiro)
             grupo_projeteis.add(tiro)
+
+    def atacar_melee_continuo(self, mx, my, grupo_sprites, inimigos_terrestres, inimigos_voadores):
+        if not self.area_melee.alive():
+            grupo_sprites.add(self.area_melee)
+            
+        dx = mx - self.rect.centerx
+        dy = my - self.rect.centery
+        angle = math.atan2(dy, dx)
+        
+        distancia = min(math.hypot(dx, dy), 80) 
+        self.area_melee.rect.centerx = self.rect.centerx + math.cos(angle) * distancia
+        self.area_melee.rect.centery = self.rect.centery + math.sin(angle) * distancia
+
+        abates = 0
+        agora = pygame.time.get_ticks()
+        if agora - self.ultimo_dano_melee >= self.cooldown_dano_melee:
+            self.ultimo_dano_melee = agora
+            
+            # --- NOVO: Passamos a variável self.dano_melee para dentro dos parênteses! ---
+            for inimigo in inimigos_terrestres:
+                if pygame.sprite.collide_rect(self.area_melee, inimigo):
+                    if inimigo.tomar_dano(self.dano_melee): abates += 1
+            
+            for voador in inimigos_voadores:
+                if pygame.sprite.collide_rect(self.area_melee, voador):
+                    if voador.tomar_dano(self.dano_melee): abates += 1
+                    
+        return abates
+
+    def parar_melee(self):
+        if self.area_melee.alive():
+            self.area_melee.kill()

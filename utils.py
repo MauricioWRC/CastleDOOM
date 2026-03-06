@@ -1,4 +1,5 @@
 import pygame
+import os
 
 # Configurações da tela (Resolução)
 VIRTUAL_WIDTH = 1920
@@ -28,3 +29,20 @@ FONTE_HUD = pygame.font.SysFont("Arial", 40, bold=True)
 
 clock = pygame.time.Clock()
 FPS = 60
+
+# --- NOVO: Sistema de Imagens Inteligente ---
+def carregar_imagem(caminho, tamanho, cor_padrao):
+    """
+    Tenta carregar uma imagem da pasta. 
+    Se o ficheiro não existir, cria um quadrado com a cor padrão.
+    """
+    if os.path.exists(caminho):
+        img = pygame.image.load(caminho).convert_alpha()
+        return pygame.transform.scale(img, tamanho)
+    else:
+        surf = pygame.Surface(tamanho, pygame.SRCALPHA)
+        surf.fill(cor_padrao)
+        return surf
+
+# Carrega o fundo (se não achar, fica branco)
+IMG_FUNDO = carregar_imagem("img/fundo.png", (VIRTUAL_WIDTH, VIRTUAL_HEIGHT), WHITE)
