@@ -19,7 +19,7 @@ pygame.display.set_caption("CastleDoom")
 
 # --- Música de fundo ---
 pygame.mixer.music.load("assets/musica.mp3")
-pygame.mixer.music.set_volume(0.1)
+pygame.mixer.music.set_volume(0.6)
 pygame.mixer.music.play(-1)  # loop infinito
 # Cores
 WHITE = (255, 255, 255)
